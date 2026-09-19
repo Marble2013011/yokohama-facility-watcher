@@ -55,6 +55,16 @@ async function main() {
   try {
     await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
     await page.getByRole('tab', { name: /日時から探す/ }).click();
+    console.log(JSON.stringify({
+  from: cfg.from,
+  to: cfg.to,
+  category: cfg.category,
+  purpose: cfg.purpose,
+  weekdays: cfg.weekdays,
+  searchTarget: cfg.searchTarget,
+  areas: cfg.areas,
+  roomTypes: cfg.roomTypes
+}, null, 2));
     if (!await clickLabel(page, cfg.category)) throw new Error(`利用目的の分類が見つかりません: ${cfg.category}`);
     if (!await clickLabel(page, cfg.purpose)) throw new Error(`利用目的が見つかりません: ${cfg.purpose}`);
     const dates = page.locator('input[type="date"]');
