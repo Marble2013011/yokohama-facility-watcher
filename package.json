@@ -1,0 +1,7 @@
+{
+  "name": "yokohama-facility-watcher",
+  "private": true,
+  "type": "commonjs",
+  "scripts": { "check": "node src/check.js" },
+  "dependencies": { "playwright": "^1.55.0" }
+}
