@@ -197,28 +197,35 @@ async function main() {
       }
     }
 
+    const previous = fs.existsSync(statePath)
+      ? JSON.parse(fs.readFileSync(statePath, 'utf8'))
+      : null;
+
+    const previousLines = previous?.result
+      ? previous.result.split('\n').map(normalize).filter(Boolean)
+      : [];
+    const previousSet = new Set(previousLines);
+    const newAvailability = availability.filter(line => !previousSet.has(line));
+
     const result = availability.join('\n');
     const current = {
       checkedAt: new Date().toISOString(),
       result,
       hash: sha256(result),
     };
-    const previous = fs.existsSync(statePath)
-      ? JSON.parse(fs.readFileSync(statePath, 'utf8'))
-      : null;
     fs.writeFileSync(statePath, JSON.stringify(current, null, 2) + '\n');
 
-    const changedToAvailable = availability.length > 0 &&
-      (!previous || previous.hash !== current.hash);
+    const changedToAvailable = newAvailability.length > 0;
 
     console.log(JSON.stringify({
       changedToAvailable,
       availabilityCount: availability.length,
+      newAvailabilityCount: newAvailability.length,
       result: result.slice(0, 4000),
     }, null, 2));
 
     if (changedToAvailable) {
-      await notify(availability);
+      await notify(newAvailability);
     }
   } finally {
     await browser.close();
@@ -233,4 +240,5 @@ if (require.main === module) {
 }
 
 module.exports = { normalize, sha256 };
+
 
