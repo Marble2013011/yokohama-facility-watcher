@@ -26,15 +26,31 @@ function sha256(s) {
   return crypto.createHash('sha256').update(s).digest('hex');
 }
 async function clickLabel(page, text) {
-  const label = page.locator('label:visible').filter({ hasText: text }).first();
-  if (await label.count()) {
-    await label.click();
-    return true;
+  const labels = page.locator('label:visible');
+  for (let i = 0; i < await labels.count(); i++) {
+    const label = labels.nth(i);
+    if (normalize(await label.innerText()) === text) {
+      await label.click();
+      return true;
+    }
   }
   const exact = page.getByText(text, { exact: true }).first();
   if (await exact.count() && await exact.isVisible()) {
     await exact.click();
     return true;
+  }
+  return false;
+}
+async function clickNamedLabel(page, inputName, text) {
+  const inputs = page.locator(`input[name="${inputName}"]`);
+  for (let i = 0; i < await inputs.count(); i++) {
+    const id = await inputs.nth(i).getAttribute('id');
+    if (!id) continue;
+    const label = page.locator(`label[for="${id}"]`);
+    if (await label.count() && normalize(await label.innerText()) === text && await label.isVisible()) {
+      await label.click();
+      return true;
+    }
   }
   return false;
 }
@@ -157,9 +173,17 @@ async function main() {
     await page.waitForTimeout(1000);
 
     const more = page.getByRole('button', { name: 'さらに読み込む' });
+    const dialogs = page.locator('[role="dialog"]:visible');
+    if (await dialogs.count()) {
+      console.log(`result dialog: ${normalize(await dialogs.first().innerText())}`);
+      const close = dialogs.first().getByRole('button', { name: '閉じる' });
+      if (await close.count()) await close.click();
+      await dialogs.first().waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
+    }
     for (let i = 0; i < 100; i++) {
       if (await more.count() === 0 || !await more.isVisible()) break;
       await more.click();
+      await page.locator('[role="dialog"]').waitFor({ state: 'hidden', timeout: 30000 }).catch(() => {});
       await page.waitForTimeout(150);
     }
 
