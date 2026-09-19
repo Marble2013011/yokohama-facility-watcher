@@ -21,12 +21,21 @@ function required(name, value) { if (!value) throw new Error(`${name} is require
 function normalize(s) { return s.replace(/\s+/g, ' ').trim(); }
 function sha256(s) { return crypto.createHash('sha256').update(s).digest('hex'); }
 async function clickLabel(page, text) {
-  const label = page.locator('label').filter({ hasText: text }).first();
-  if (await label.count()) { await label.click(); return true; }
+  const label = page.locator('label:visible').filter({ hasText: text }).first();
+  if (await label.count()) {
+    await label.click();
+    return true;
+  }
+
   const exact = page.getByText(text, { exact: true }).first();
-  if (await exact.count()) { await exact.click(); return true; }
+  if (await exact.count() && await exact.isVisible()) {
+    await exact.click();
+    return true;
+  }
+
   return false;
 }
+
 
 async function notify(lines) {
   const url = process.env.NOTIFY_WEBHOOK_URL;
@@ -56,10 +65,28 @@ async function main() {
       await timeSelects.nth(0).selectOption({ label: cfg.fromTime }).catch(() => {});
       await timeSelects.nth(1).selectOption({ label: cfg.toTime }).catch(() => {});
     }
-    for (const day of cfg.weekdays) await clickLabel(page, day);
-    await clickLabel(page, cfg.searchTarget);
-    for (const area of cfg.areas) await clickLabel(page, area);
-    for (const room of cfg.roomTypes) await clickLabel(page, room);
+    for (const day of cfg.weekdays) {
+  await clickLabel(page, day);
+}
+
+await clickLabel(page, cfg.searchTarget);
+
+if (cfg.areas.length > 0) {
+  const areaToggle = page.getByRole('button', {
+    name: '区名などで絞り込む'
+  });
+
+  if (await areaToggle.count() && await areaToggle.isVisible()) {
+    await areaToggle.click();
+  }
+
+  for (const area of cfg.areas) {
+    if (!await clickLabel(page, area)) {
+      throw new Error(`地区が見つかりません、または選択できません: ${area}`);
+    }
+  }
+}
+
     const searchButtons = page.locator('button:visible').filter({ hasText: /^検索$/ });
     if (await searchButtons.count() === 0) throw new Error('表示中の検索ボタンが見つかりません');
     await searchButtons.first().click();
