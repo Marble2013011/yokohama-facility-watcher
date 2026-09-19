@@ -113,30 +113,59 @@ if (cfg.areas.length > 0) {
   }
 }
 
-    const searchButtons = page.locator('button:visible').filter({ hasText: /^検索$/ });
-    if (await searchButtons.count() === 0) throw new Error('表示中の検索ボタンが見つかりません');
     await searchButtons.first().click();
-    await page.waitForLoadState('networkidle').catch(() => {});
-    await page.waitForTimeout(1000);
 
-    const tables = await page.locator('table').allInnerTexts();
-    const body = await page.locator('body').innerText();
-    // The home screen itself contains the words 「空きコマ」, so do not treat
-    // a validation failure or an unsubmitted form as an available result.
-    const resultScreen = new URL(page.url()).pathname !== '/user/Home' || tables.length > 0;
-    const rows = resultScreen
-      ? (tables.length ? tables.join('\n') : body).split(/\n+/).map(normalize).filter(Boolean)
-      : [];
-    const availability = rows.filter(x => /空き|予約可|○|〇|利用可/.test(x));
-    const result = normalize(availability.join('\n'));
-    const current = { checkedAt: new Date().toISOString(), result, hash: sha256(result) };
-    const previous = fs.existsSync(statePath) ? JSON.parse(fs.readFileSync(statePath, 'utf8')) : null;
-    fs.writeFileSync(statePath, JSON.stringify(current, null, 2) + '\n');
-    const changedToAvailable = availability.length > 0 && (!previous || previous.hash !== current.hash);
-    console.log(JSON.stringify({ changedToAvailable, availabilityCount: availability.length, result: result.slice(0, 4000) }, null, 2));
-    if (changedToAvailable) await notify(availability);
-  } finally { await browser.close(); }
+await page.waitForURL(
+  /\/user\/VacantFrameFacilityStatus/,
+  { timeout: 30000, waitUntil: 'commit' }
+);
+
+await page.waitForLoadState('domcontentloaded').catch(() => {});
+await page
+  .locator('table.facilities')
+  .waitFor({ state: 'visible', timeout: 30000 })
+  .catch(() => {});
+
+await page.waitForTimeout(1000);
+
+// 「さらに読み込む」が表示される間、全件読み込む
+const more = page.getByRole('button', {
+  name: 'さらに読み込む'
+});
+
+for (
+  let i = 0;
+  i < 100 &&
+  await more.count() &&
+  await more.isVisible();
+  i++
+) {
+  await more.click();
+  await page.waitForTimeout(150);
 }
 
-if (require.main === module) main().catch(err => { console.error(err.stack || err); process.exit(1); });
+// 施設・室場・日付・時間帯を1行ずつ抽出
+const resultRows = page.locator(
+  'table.facilities tbody tr:visible'
+);
+
+const availability = [];
+
+for (let i = 0; i < await resultRows.count(); i++) {
+  const cells = await resultRows
+    .nth(i)
+    .locator('td.detail')
+    .allInnerTexts();
+
+  const values = cells
+    .map(normalize)
+    .filter(Boolean);
+
+  if (values.length >= 4) {
+    availability.push(values.slice(0, 4).join(' | '));
+  }
+}
+
+const result = availability.join('\n');
+
 module.exports = { normalize, sha256 };
