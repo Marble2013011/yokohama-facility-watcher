@@ -70,11 +70,27 @@ async function main() {
     const dates = page.locator('input[type="date"]');
     if (await dates.count() < 2) throw new Error('利用期間の日付入力欄を特定できません');
     await dates.nth(0).fill(cfg.from); await dates.nth(1).fill(cfg.to);
-    const timeSelects = page.locator('select');
-    if (await timeSelects.count() >= 2) {
-      await timeSelects.nth(0).selectOption({ label: cfg.fromTime }).catch(() => {});
-      await timeSelects.nth(1).selectOption({ label: cfg.toTime }).catch(() => {});
-    }
+const timeSelects = page.locator('select');
+
+function siteTimeLabel(value) {
+  // サイトは「0:00」「9:00」の形式なので、
+  // 「00:00」「09:00」をサイト表示に合わせる
+  return value.replace(/^0(?=\d:)/, '');
+}
+
+if (await timeSelects.count() >= 2) {
+  const fromTimeLabel = siteTimeLabel(cfg.fromTime);
+  const toTimeLabel = siteTimeLabel(cfg.toTime);
+
+  await timeSelects.nth(0).selectOption({ label: fromTimeLabel });
+  await timeSelects.nth(1).selectOption({ label: toTimeLabel });
+
+  console.log(JSON.stringify({
+    selectedFromTime: fromTimeLabel,
+    selectedToTime: toTimeLabel
+  }));
+}
+
     for (const day of cfg.weekdays) {
   await clickLabel(page, day);
 }
