@@ -1,0 +1,53 @@
+name: Check Yokohama facility availability
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: Check availability
+        env:
+          FROM_DATE: ${{ vars.FROM_DATE }}
+          TO_DATE: ${{ vars.TO_DATE }}
+          FROM_TIME: ${{ vars.FROM_TIME }}
+          TO_TIME: ${{ vars.TO_TIME }}
+          USAGE_CATEGORY: ${{ vars.USAGE_CATEGORY }}
+          USAGE_PURPOSE: ${{ vars.USAGE_PURPOSE }}
+          SEARCH_TARGET: ${{ vars.SEARCH_TARGET }}
+          AREAS: ${{ vars.AREAS }}
+          NOTIFY_KIND: ${{ vars.NOTIFY_KIND }}
+          NOTIFY_WEBHOOK_URL: ${{ secrets.NOTIFY_WEBHOOK_URL }}
+        run: npm run check
+
+      - name: Commit state
+        run: |
+          if git diff --quiet -- state.json; then
+            exit 0
+          fi
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          git add state.json
+          git commit -m 'chore: update watcher state'
+          git push
