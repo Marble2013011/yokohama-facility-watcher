@@ -21,14 +21,24 @@ jobs:
           node-version: 24
           cache: npm
 
+      - name: Set search dates
+        run: |
+          TODAY=$(TZ=Asia/Tokyo date +%F)
+          TO_DATE=$(TZ=Asia/Tokyo date -d "+30 days" +%F)
+
+          echo "FROM_DATE=$TODAY" >> "$GITHUB_ENV"
+          echo "TO_DATE=$TO_DATE" >> "$GITHUB_ENV"
+
+          echo "検索開始日: $TODAY"
+          echo "検索終了日: $TO_DATE"
+
+
       - run: npm ci
 
       - run: npx playwright install --with-deps chromium
 
       - name: Check availability
         env:
-          FROM_DATE: ${{ vars.FROM_DATE }}
-          TO_DATE: ${{ vars.TO_DATE }}
           FROM_TIME: ${{ vars.FROM_TIME }}
           TO_TIME: ${{ vars.TO_TIME }}
           USAGE_CATEGORY: ${{ vars.USAGE_CATEGORY }}
