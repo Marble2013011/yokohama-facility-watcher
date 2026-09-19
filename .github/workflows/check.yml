@@ -24,7 +24,7 @@ jobs:
       - name: Set search dates
         run: |
           TODAY=$(TZ=Asia/Tokyo date +%F)
-          TO_DATE=$(TZ=Asia/Tokyo date -d "+30 days" +%F)
+          TO_DATE=$(TZ=Asia/Tokyo date -d "+29 days" +%F)
 
           echo "FROM_DATE=$TODAY" >> "$GITHUB_ENV"
           echo "TO_DATE=$TO_DATE" >> "$GITHUB_ENV"
