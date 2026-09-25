@@ -13,11 +13,8 @@ const cfg = {
   weekdays: (process.env.WEEKDAYS || '').split(',').map(s => s.trim()).filter(Boolean),
   searchTarget: process.env.SEARCH_TARGET || '空きコマ',
   areas: (process.env.AREAS || '').split(',').map(s => s.trim()).filter(Boolean),
+  facilities: (process.env.FACILITIES || '').split(',').map(s => s.trim()).filter(Boolean),
 };
-facilities: (process.env.FACILITIES || '')
-  .split(',')
-  .map(s => s.trim())
-  .filter(Boolean),
 const statePath = process.env.STATE_PATH || 'state.json';
 
 function required(name, value) {
@@ -202,26 +199,21 @@ async function main() {
       }
     }
 
-const previous = fs.existsSync(statePath)
-  ? JSON.parse(fs.readFileSync(statePath, 'utf8'))
-  : null;
+    const previous = fs.existsSync(statePath)
+      ? JSON.parse(fs.readFileSync(statePath, 'utf8'))
+      : null;
 
-const filteredAvailability = cfg.facilities.length > 0
-  ? availability.filter(line =>
-      cfg.facilities.includes(line.split(' | ')[0])
-    )
-  : availability;
+    const filteredAvailability = cfg.facilities.length > 0
+      ? availability.filter(line => cfg.facilities.includes(line.split(' | ')[0]))
+      : availability;
 
-const previousLines = previous?.result
-  ? previous.result.split('\n').map(normalize).filter(Boolean)
-  : [];
+    const previousLines = previous?.result
+      ? previous.result.split('\n').map(normalize).filter(Boolean)
+      : [];
+    const previousSet = new Set(previousLines);
+    const newAvailability = filteredAvailability.filter(line => !previousSet.has(line));
 
-const previousSet = new Set(previousLines);
-const newAvailability = filteredAvailability
-  .filter(line => !previousSet.has(line));
-
-const result = filteredAvailability.join('\n');
-
+    const result = filteredAvailability.join('\n');
     const current = {
       checkedAt: new Date().toISOString(),
       result,
@@ -254,5 +246,3 @@ if (require.main === module) {
 }
 
 module.exports = { normalize, sha256 };
-
-
