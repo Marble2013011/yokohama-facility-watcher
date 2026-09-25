@@ -14,6 +14,10 @@ const cfg = {
   searchTarget: process.env.SEARCH_TARGET || '空きコマ',
   areas: (process.env.AREAS || '').split(',').map(s => s.trim()).filter(Boolean),
 };
+facilities: (process.env.FACILITIES || '')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean),
 const statePath = process.env.STATE_PATH || 'state.json';
 
 function required(name, value) {
