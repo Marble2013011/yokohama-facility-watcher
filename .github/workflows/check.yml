@@ -51,7 +51,7 @@ jobs:
           USAGE_PURPOSE: ${{ vars.USAGE_PURPOSE }}
           SEARCH_TARGET: ${{ vars.SEARCH_TARGET }}
           AREAS: ${{ vars.AREAS }}
-          FACILITIES: ${{ vars.FACILITIES }}
+          FACILITIES: '新横浜公園,都田公園,長坂谷公園第一,長坂谷公園第二'
           NOTIFY_KIND: ${{ vars.NOTIFY_KIND }}
           NOTIFY_WEBHOOK_URL: ${{ secrets.NOTIFY_WEBHOOK_URL }}
         run: npm run check
@@ -69,7 +69,7 @@ jobs:
           USAGE_PURPOSE: ${{ vars.USAGE_PURPOSE }}
           SEARCH_TARGET: ${{ vars.SEARCH_TARGET }}
           AREAS: ${{ vars.AREAS }}
-          FACILITIES: ${{ vars.FACILITIES }}
+          FACILITIES: '新横浜公園'
           NOTIFY_KIND: ${{ vars.NOTIFY_KIND }}
           NOTIFY_WEBHOOK_URL: ${{ secrets.NOTIFY_WEBHOOK_URL }}
         run: npm run check
