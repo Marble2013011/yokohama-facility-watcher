@@ -45,6 +45,7 @@ jobs:
           USAGE_PURPOSE: ${{ vars.USAGE_PURPOSE }}
           SEARCH_TARGET: ${{ vars.SEARCH_TARGET }}
           AREAS: ${{ vars.AREAS }}
+          FACILITIES: ${{ vars.FACILITIES }}
           NOTIFY_KIND: ${{ vars.NOTIFY_KIND }}
           NOTIFY_WEBHOOK_URL: ${{ secrets.NOTIFY_WEBHOOK_URL }}
         run: npm run check
