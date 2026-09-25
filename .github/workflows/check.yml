@@ -11,7 +11,7 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 4
+    timeout-minutes: 8
 
     steps:
       - name: Checkout
@@ -28,12 +28,9 @@ jobs:
         run: |
           TODAY=$(TZ=Asia/Tokyo date +%F)
           TO_DATE=$(TZ=Asia/Tokyo date -d "+29 days" +%F)
-
           echo "FROM_DATE=$TODAY" >> "$GITHUB_ENV"
           echo "TO_DATE=$TO_DATE" >> "$GITHUB_ENV"
-
-          echo "検索開始日: $TODAY"
-          echo "検索終了日: $TO_DATE"
+          echo "検索期間: $TODAY - $TO_DATE"
 
       - name: Install dependencies
         run: npm ci
@@ -41,15 +38,17 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Check availability
+      - name: Weekend and holiday search (09:00-21:00)
         env:
           FROM_DATE: ${{ env.FROM_DATE }}
           TO_DATE: ${{ env.TO_DATE }}
-          FROM_TIME: ${{ vars.FROM_TIME }}
-          TO_TIME: ${{ vars.TO_TIME }}
+          FROM_TIME: '09:00'
+          TO_TIME: '21:00'
+          WEEKDAYS: '土曜日,日曜日,祝日'
+          SEARCH_NAME: weekend-holiday
+          STATE_PATH: state-weekend.json
           USAGE_CATEGORY: ${{ vars.USAGE_CATEGORY }}
           USAGE_PURPOSE: ${{ vars.USAGE_PURPOSE }}
-          WEEKDAYS: ${{ vars.WEEKDAYS }}
           SEARCH_TARGET: ${{ vars.SEARCH_TARGET }}
           AREAS: ${{ vars.AREAS }}
           FACILITIES: ${{ vars.FACILITIES }}
@@ -57,15 +56,32 @@ jobs:
           NOTIFY_WEBHOOK_URL: ${{ secrets.NOTIFY_WEBHOOK_URL }}
         run: npm run check
 
-      - name: Commit state
+      - name: All weekdays evening search (19:00-21:00)
+        env:
+          FROM_DATE: ${{ env.FROM_DATE }}
+          TO_DATE: ${{ env.TO_DATE }}
+          FROM_TIME: '19:00'
+          TO_TIME: '21:00'
+          WEEKDAYS: '月曜日,火曜日,水曜日,木曜日,金曜日,土曜日,日曜日'
+          SEARCH_NAME: all-days-evening
+          STATE_PATH: state-evening.json
+          USAGE_CATEGORY: ${{ vars.USAGE_CATEGORY }}
+          USAGE_PURPOSE: ${{ vars.USAGE_PURPOSE }}
+          SEARCH_TARGET: ${{ vars.SEARCH_TARGET }}
+          AREAS: ${{ vars.AREAS }}
+          FACILITIES: ${{ vars.FACILITIES }}
+          NOTIFY_KIND: ${{ vars.NOTIFY_KIND }}
+          NOTIFY_WEBHOOK_URL: ${{ secrets.NOTIFY_WEBHOOK_URL }}
+        run: npm run check
+
+      - name: Commit search states
         run: |
-          if git diff --quiet -- state.json; then
-            echo "state.jsonに変更はありません"
+          if git diff --quiet -- state-weekend.json state-evening.json; then
+            echo "検索状態に変更はありません"
             exit 0
           fi
-
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add state.json
-          git commit -m 'chore: update watcher state'
+          git add state-weekend.json state-evening.json
+          git commit -m 'chore: update watcher states'
           git push
