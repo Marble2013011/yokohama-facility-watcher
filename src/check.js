@@ -233,7 +233,7 @@ const result = filteredAvailability.join('\n');
 
     console.log(JSON.stringify({
       changedToAvailable,
-      availabilityCount: availability.length,
+      availabilityCount: filteredAvailability.length,
       newAvailabilityCount: newAvailability.length,
       result: result.slice(0, 4000),
     }, null, 2));
