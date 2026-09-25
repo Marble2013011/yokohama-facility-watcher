@@ -107,6 +107,7 @@ async function main() {
       weekdays: cfg.weekdays,
       searchTarget: cfg.searchTarget,
       areas: cfg.areas,
+      facilities: cfg.facilities,
     }, null, 2));
 
     if (!await clickLabel(page, cfg.category)) {
