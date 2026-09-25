@@ -202,17 +202,26 @@ async function main() {
       }
     }
 
-    const previous = fs.existsSync(statePath)
-      ? JSON.parse(fs.readFileSync(statePath, 'utf8'))
-      : null;
+const previous = fs.existsSync(statePath)
+  ? JSON.parse(fs.readFileSync(statePath, 'utf8'))
+  : null;
 
-    const previousLines = previous?.result
-      ? previous.result.split('\n').map(normalize).filter(Boolean)
-      : [];
-    const previousSet = new Set(previousLines);
-    const newAvailability = availability.filter(line => !previousSet.has(line));
+const filteredAvailability = cfg.facilities.length > 0
+  ? availability.filter(line =>
+      cfg.facilities.includes(line.split(' | ')[0])
+    )
+  : availability;
 
-    const result = availability.join('\n');
+const previousLines = previous?.result
+  ? previous.result.split('\n').map(normalize).filter(Boolean)
+  : [];
+
+const previousSet = new Set(previousLines);
+const newAvailability = filteredAvailability
+  .filter(line => !previousSet.has(line));
+
+const result = filteredAvailability.join('\n');
+
     const current = {
       checkedAt: new Date().toISOString(),
       result,
