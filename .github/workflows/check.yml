@@ -26,11 +26,19 @@ jobs:
       - name: Set search dates
         shell: bash
         run: |
+          # 利用期間: 毎月10日までは「翌日～今月末日」、11日からは「翌日～29日後」
           TODAY=$(TZ=Asia/Tokyo date +%F)
-          TO_DATE=$(TZ=Asia/Tokyo date -d "+29 days" +%F)
-          echo "FROM_DATE=$TODAY" >> "$GITHUB_ENV"
+          FROM_DATE=$(TZ=Asia/Tokyo date -d "$TODAY +1 day" +%F)
+          DAY=$(TZ=Asia/Tokyo date -d "$TODAY" +%-d)
+          if [ "$DAY" -le 10 ]; then
+            FIRST_NEXT_MONTH=$(TZ=Asia/Tokyo date -d "$(TZ=Asia/Tokyo date -d "$TODAY" +%Y-%m-01) +1 month" +%F)
+            TO_DATE=$(TZ=Asia/Tokyo date -d "$FIRST_NEXT_MONTH -1 day" +%F)
+          else
+            TO_DATE=$(TZ=Asia/Tokyo date -d "$TODAY +29 days" +%F)
+          fi
+          echo "FROM_DATE=$FROM_DATE" >> "$GITHUB_ENV"
           echo "TO_DATE=$TO_DATE" >> "$GITHUB_ENV"
-          echo "検索期間: $TODAY - $TO_DATE"
+          echo "検索期間: $FROM_DATE - $TO_DATE"
 
       - name: Install dependencies
         run: npm ci
@@ -38,6 +46,27 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
+      # ① 全日・夜間 19:00-21:00
+      - name: Evening search, all days (19:00-21:00)
+        env:
+          FROM_DATE: ${{ env.FROM_DATE }}
+          TO_DATE: ${{ env.TO_DATE }}
+          FROM_TIME: '19:00'
+          TO_TIME: '21:00'
+          WEEKDAYS: '月曜日,火曜日,水曜日,木曜日,金曜日,土曜日,日曜日'
+          SEARCH_NAME: all-days-evening
+          NOTIFY_TITLE: '夜間 19:00-21:00'
+          STATE_PATH: state-evening.json
+          USAGE_CATEGORY: ${{ vars.USAGE_CATEGORY }}
+          USAGE_PURPOSE: ${{ vars.USAGE_PURPOSE }}
+          SEARCH_TARGET: ${{ vars.SEARCH_TARGET }}
+          AREAS: '神奈川区,港北区,都筑区,緑区'
+          FACILITIES: '都田公園,新横浜公園,三ツ沢公園,長坂谷公園第二,長坂谷公園第一'
+          NOTIFY_KIND: ${{ vars.NOTIFY_KIND }}
+          NOTIFY_WEBHOOK_URL: ${{ secrets.NOTIFY_WEBHOOK_URL }}
+        run: npm run check
+
+      # ② 土日祝・9:00-21:00
       - name: Weekend and holiday search (09:00-21:00)
         env:
           FROM_DATE: ${{ env.FROM_DATE }}
@@ -46,30 +75,13 @@ jobs:
           TO_TIME: '21:00'
           WEEKDAYS: '土曜日,日曜日,祝日'
           SEARCH_NAME: weekend-holiday
+          NOTIFY_TITLE: '土日祝 9:00-21:00'
           STATE_PATH: state-weekend.json
           USAGE_CATEGORY: ${{ vars.USAGE_CATEGORY }}
           USAGE_PURPOSE: ${{ vars.USAGE_PURPOSE }}
           SEARCH_TARGET: ${{ vars.SEARCH_TARGET }}
-          AREAS: ${{ vars.AREAS }}
-          FACILITIES: '新横浜公園,都田公園,長坂谷公園第一,長坂谷公園第二'
-          NOTIFY_KIND: ${{ vars.NOTIFY_KIND }}
-          NOTIFY_WEBHOOK_URL: ${{ secrets.NOTIFY_WEBHOOK_URL }}
-        run: npm run check
-
-      - name: All weekdays evening search (19:00-21:00)
-        env:
-          FROM_DATE: ${{ env.FROM_DATE }}
-          TO_DATE: ${{ env.TO_DATE }}
-          FROM_TIME: '19:00'
-          TO_TIME: '21:00'
-          WEEKDAYS: '月曜日,火曜日,水曜日,木曜日,金曜日,土曜日,日曜日'
-          SEARCH_NAME: all-days-evening
-          STATE_PATH: state-evening.json
-          USAGE_CATEGORY: ${{ vars.USAGE_CATEGORY }}
-          USAGE_PURPOSE: ${{ vars.USAGE_PURPOSE }}
-          SEARCH_TARGET: ${{ vars.SEARCH_TARGET }}
-          AREAS: ${{ vars.AREAS }}
-          FACILITIES: '新横浜公園'
+          AREAS: '神奈川区,港北区,都筑区,緑区'
+          FACILITIES: '都田公園,新横浜公園,三ツ沢公園,長坂谷公園第二,長坂谷公園第一'
           NOTIFY_KIND: ${{ vars.NOTIFY_KIND }}
           NOTIFY_WEBHOOK_URL: ${{ secrets.NOTIFY_WEBHOOK_URL }}
         run: npm run check
