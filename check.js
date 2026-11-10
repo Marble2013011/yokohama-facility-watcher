@@ -64,8 +64,9 @@ async function notify(lines) {
     console.warn('NOTIFY_WEBHOOK_URL is not set; notification skipped');
     return;
   }
+  const title = process.env.NOTIFY_TITLE || '';
   const text = [
-    '横浜市施設予約の空きが検出されました',
+    title ? `横浜市施設予約の空きが検出されました【${title}】` : '横浜市施設予約の空きが検出されました',
     '',
     ...lines.slice(0, 30),
     '',
@@ -247,3 +248,4 @@ if (require.main === module) {
 }
 
 module.exports = { normalize, sha256 };
+
