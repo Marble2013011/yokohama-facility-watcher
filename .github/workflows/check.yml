@@ -88,12 +88,15 @@ jobs:
 
       - name: Commit search states
         run: |
-          if git diff --quiet -- state-weekend.json state-evening.json; then
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          # 先に git add してから差分を見ること。git diff は未追跡ファイルを
+          # 検出できないため、add 前に diff すると新規作成された state が
+          # 永遠にコミットされず、毎回「前回結果なし＝全件新規」になる。
+          git add state-weekend.json state-evening.json
+          if git diff --cached --quiet; then
             echo "検索状態に変更はありません"
             exit 0
           fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add state-weekend.json state-evening.json
           git commit -m 'chore: update watcher states'
           git push
