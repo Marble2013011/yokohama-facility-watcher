@@ -1,4 +1,7 @@
 {
-  "runDate": "2026-11-25",
-  "additions": []
+  "runDate": "2026-11-24",
+  "additions": [],
+  "newLanes": [
+    { "facility": "三ツ沢公園", "date": "2026-11-28", "from": "09:00", "to": "11:00", "courts": [7] }
+  ]
 }
